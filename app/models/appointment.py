@@ -1,13 +1,9 @@
-# app/models/appointment.py
 import enum
 import uuid
-
 from sqlalchemy import String, Text, DateTime, func, Enum, CheckConstraint, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
-
 from app.db.base import Base
-
 
 class AppointmentStatus(str, enum.Enum):
     pending = "pending"
@@ -42,7 +38,11 @@ class Appointment(Base):
 
     cancel_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    created_at: Mapped[object] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at: Mapped[object] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False)
+    
     updated_at: Mapped[object] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

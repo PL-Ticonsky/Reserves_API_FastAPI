@@ -11,12 +11,12 @@ Usage:
 
 from sqlalchemy.orm import DeclarativeBase
 # Import models so Alembic can detect them
-from app.models.user import User  # noqa: E402,F401
-from app.models.availability import Availability  # noqa: E402,F401
-from app.models.appointment import Appointment  # noqa: E402,F401
+
 
 class Base(DeclarativeBase):
     pass
 
-
+from app.models.user import User  # noqa: E402,F401
+from app.models.availability import Availability  # noqa: E402,F401
+from app.models.appointment import Appointment  # noqa: E402,F401
 
