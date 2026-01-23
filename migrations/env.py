@@ -17,8 +17,12 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from app.core.config import settings
-from app.db.base import Base  # must import models inside Base module for metadata to include them
+from app.db.base import Base
 
+# Import models so Base.metadata includes them (required for autogenerate)
+from app.models.user import User  # noqa: F401
+from app.models.appointment import Appointment  # noqa: F401
+from app.models.availability import Availability  # noqa: F401
 
 # Alembic Config object (reads alembic.ini)
 config = context.config
