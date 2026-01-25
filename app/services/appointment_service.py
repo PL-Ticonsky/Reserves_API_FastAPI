@@ -204,3 +204,65 @@ def cancel_appointment_as_provider(
         new_status=AppointmentStatus.canceled,
         cancel_reason=reason,
     )
+
+def reschedule_client_appointment(
+    db: Session,
+    *,
+    client_id: UUID,
+    appointment_id: UUID,
+    start_at: datetime,
+    end_at: datetime,
+) -> Appointment:
+    # 1) Validación básica
+    if not (start_at < end_at):
+        raise InvalidTimeRangeError("INVALID_TIME_RANGE")
+
+    if start_at.tzinfo is None or end_at.tzinfo is None:
+        raise InvalidTimeRangeError("DATETIME_MUST_HAVE_TIMEZONE")
+
+    # 2) Buscar cita del cliente
+    appt = get_appointment_by_id_for_client(db, appointment_id=appointment_id, client_id=client_id)
+    if appt is None:
+        raise AppointmentNotFoundError()
+
+    # 3) MVP: solo reschedule si está pending
+    if appt.status != AppointmentStatus.pending:
+        raise InvalidStatusTransitionError()
+
+    # 4) Validar availability (misma lógica que create)
+    tz_name = getattr(settings, "provider_timezone", "America/Bogota")
+    provider_tz = ZoneInfo(tz_name)
+
+    start_local = start_at.astimezone(provider_tz)
+    end_local = end_at.astimezone(provider_tz)
+
+    if start_local.date() != end_local.date():
+        raise InvalidTimeRangeError("CANNOT_CROSS_LOCAL_DAY")
+
+    weekday = start_local.weekday()
+    start_t = start_local.time()
+    end_t = end_local.time()
+
+    blocks = list_availability(db)
+    if not _is_within_any_block(
+        weekday=weekday,
+        start_t=start_t,
+        end_t=end_t,
+        availability_blocks=blocks,
+    ):
+        raise OutsideAvailabilityError("OUTSIDE_AVAILABILITY")
+
+    # 5) Validar overlap EXCLUYENDO esta cita
+    overlaps = find_overlapping_appointments(
+        db,
+        start_at=start_at,
+        end_at=end_at,
+        exclude_appointment_id=appt.id,
+    )
+    if overlaps:
+        raise AppointmentOverlapError("APPOINTMENT_OVERLAP")
+
+    # 6) Actualizar horas (y mantener pending)
+    from app.repositories.appointment_repo import update_appointment_time
+    appt = update_appointment_time(db, appt, start_at=start_at, end_at=end_at)
+    return appt

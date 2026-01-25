@@ -65,14 +65,6 @@ class AppointmentRescheduleIn(BaseModel):
         return end_at
 
 
-class AppointmentCancelIn(BaseModel):
-    """
-    Optional body for cancel endpoints.
-    Client usually doesn't need a reason, but provider cancel might.
-    """
-    reason: str | None = Field(default=None, max_length=500)
-
-
 class AppointmentOut(BaseModel):
     id: UUID
     client_id: UUID

@@ -79,6 +79,7 @@ def list_appointments_for_client(
     return list(db.execute(stmt).scalars().all())
 
 
+
 def find_overlapping_appointments(
     db: Session,
     *,
@@ -101,21 +102,15 @@ def find_overlapping_appointments(
     - used for reschedule, to ignore the appointment being moved
     """
     stmt = select(Appointment).where(
-        and_(
-            Appointment.status.in_([AppointmentStatus.pending, AppointmentStatus.confirmed]),
-            Appointment.start_at < end_at,
-            start_at < Appointment.end_at,
-        )
+        Appointment.status.in_([AppointmentStatus.pending, AppointmentStatus.confirmed]),
+        Appointment.start_at < end_at,
+        start_at < Appointment.end_at,
     )
 
     if exclude_appointment_id is not None:
         stmt = stmt.where(Appointment.id != exclude_appointment_id)
 
-    stmt = stmt.order_by(Appointment.start_at.asc())
     return list(db.execute(stmt).scalars().all())
-
-
-
 
 def get_appointment_by_id_for_client(db: Session, appointment_id: UUID, client_id: UUID) -> Appointment | None:
     return (
@@ -167,6 +162,21 @@ def set_appointment_status(
     if cancel_reason is not None:
         appt.cancel_reason = cancel_reason
 
+    db.add(appt)
+    db.commit()
+    db.refresh(appt)
+    return appt
+
+def update_appointment_time(
+    db: Session,
+    appt: Appointment,
+    *,
+    start_at: datetime,
+    end_at: datetime,
+) -> Appointment:
+    appt.start_at = start_at
+    appt.end_at = end_at
+    # status se queda pending (MVP)
     db.add(appt)
     db.commit()
     db.refresh(appt)

@@ -134,3 +134,42 @@ def cancel_appointment(
         raise HTTPException(status_code=404, detail="APPOINTMENT_NOT_FOUND")
     except InvalidStatusTransitionError:
         raise HTTPException(status_code=400, detail="INVALID_STATUS_TRANSITION")
+
+from uuid import UUID
+from app.schemas.appointment import AppointmentRescheduleIn
+
+from app.services.appointment_service import (
+    reschedule_client_appointment,
+    AppointmentNotFoundError,
+    InvalidStatusTransitionError,
+)
+
+@router.patch(
+    "/me/appointments/{appointment_id}/reschedule",
+    response_model=AppointmentOut,
+    status_code=status.HTTP_200_OK,
+)
+def reschedule_appointment(
+    appointment_id: UUID,
+    payload: AppointmentRescheduleIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_client),
+):
+    try:
+        return reschedule_client_appointment(
+            db=db,
+            client_id=current_user.id,
+            appointment_id=appointment_id,
+            start_at=payload.start_at,
+            end_at=payload.end_at,
+        )
+    except AppointmentNotFoundError:
+        raise HTTPException(status_code=404, detail="APPOINTMENT_NOT_FOUND")
+    except InvalidStatusTransitionError:
+        raise HTTPException(status_code=400, detail="INVALID_STATUS_TRANSITION")
+    except AppointmentOverlapError:
+        raise HTTPException(status_code=409, detail="APPOINTMENT_OVERLAP")
+    except OutsideAvailabilityError:
+        raise HTTPException(status_code=422, detail="OUTSIDE_AVAILABILITY")
+    except InvalidTimeRangeError as e:
+        raise HTTPException(status_code=422, detail=str(e))
