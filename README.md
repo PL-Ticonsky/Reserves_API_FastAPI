@@ -617,3 +617,4 @@ Contributions are welcome! Please open an issue or submit a pull request.
 ---
 
 **Built with ❤️ using FastAPI & PostgreSQL**
+Made by Ticonsky <3
