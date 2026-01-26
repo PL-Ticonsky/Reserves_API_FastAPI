@@ -20,8 +20,11 @@ For detailed documentation, architecture diagrams, and advanced guides, see the 
 
 - [Features](#features)
 - [Tech Stack](#tech-stack)
+- [Architecture](#architecture)
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
+  - [Backend Setup](#backend-setup)
+  - [Frontend Setup](#frontend-setup)
 - [API Usage Examples](#api-usage-examples)
 - [Business Rules](#business-rules)
 - [Status & Transitions](#status--transitions)
@@ -55,6 +58,8 @@ For detailed documentation, architecture diagrams, and advanced guides, see the 
 
 ## Tech Stack
 
+### Backend
+
 | Technology | Purpose |
 |------------|---------|
 | **Python 3.12+** | Core language |
@@ -65,9 +70,40 @@ For detailed documentation, architecture diagrams, and advanced guides, see the 
 | **psycopg v3** | PostgreSQL adapter |
 | **JWT** | Secure authentication |
 
+### Frontend
+
+| Technology | Purpose |
+|------------|---------|
+| **Next.js 14+** | React framework (App Router) |
+| **TypeScript** | Type safety |
+| **Tailwind CSS** | Utility-first styling |
+| **shadcn/ui** | Accessible UI components |
+| **React Hook Form** | Form management |
+| **Zod** | Schema validation |
+
+---
+
+## Architecture
+
+This project follows a **clean separation** between backend and frontend:
+
+- **Backend:** Enforces all business rules, authentication, and data validation
+- **Frontend:** Consumes the REST API, visualizes state, provides user interface
+
+**Key Principle:** No business logic duplication. The frontend trusts the backend completely.
+
+### Design Philosophy
+
+- **Backend-first:** All validation, authorization, and state transitions are server-side
+- **Frontend simplicity:** Focus on user experience, not rule enforcement
+- **API-driven:** Frontend is a thin client over the REST API
+- **Role-based access:** Navigation and permissions determined by backend responses
+
 ---
 
 ## Project Structure
+
+### Backend
 
 ```
 app/
@@ -118,17 +154,57 @@ app/
 └── tests/                    # Test suite
 ```
 
+### Frontend
+
+```
+frontend/
+│
+├── app/
+│   ├── layout.tsx           # Root layout
+│   ├── page.tsx             # Landing page
+│   │
+│   ├── (auth)/              # Auth routes
+│   │   ├── login/
+│   │   └── register/
+│   │
+│   ├── client/              # Client dashboard
+│   │   ├── layout.tsx
+│   │   ├── page.tsx         # Appointment list
+│   │   └── new/             # Create appointment
+│   │
+│   └── provider/            # Provider dashboard
+│       ├── layout.tsx
+│       ├── page.tsx         # All appointments
+│       └── availability/    # Manage availability
+│
+├── components/
+│   ├── ui/                  # shadcn/ui components
+│   ├── appointment-card.tsx
+│   ├── availability-form.tsx
+│   └── slot-picker.tsx
+│
+├── lib/
+│   ├── api.ts               # API client wrapper
+│   ├── auth.ts              # Authentication helpers
+│   └── utils.ts             # Utility functions
+│
+└── types/
+    └── index.ts             # TypeScript definitions
+```
+
 ---
 
 ## Getting Started
 
-### Prerequisites
+### Backend Setup
+
+#### Prerequisites
 
 - Python 3.12 or higher
 - PostgreSQL 15+
 - [uv](https://github.com/astral-sh/uv) package manager
 
-### 1. Environment Configuration
+#### 1. Environment Configuration
 
 Create a `.env` file in the project root:
 
@@ -186,6 +262,126 @@ uv run uvicorn app.main:app --reload
 - API: http://127.0.0.1:8000
 - Interactive Docs: http://127.0.0.1:8000/docs
 - OpenAPI Schema: http://127.0.0.1:8000/openapi.json
+
+---
+
+### Frontend Setup
+---
+
+## Frontend Interface (MVP)
+
+The frontend provides a **clean, minimal, and role-aware UI** built exclusively on top of the backend API.
+
+It focuses on:
+- Simple booking for clients
+- Clear decision-making for the provider
+- Explicit visibility of appointment status
+- No hidden or implicit actions
+
+Below are real screenshots of the current MVP.
+
+---
+
+### Landing Page
+
+Public entry point explaining the booking flow and system constraints.
+
+![Landing page](Docs/assets/frontend/landing.png)
+
+---
+
+### Client Dashboard — Empty State
+
+When no availability exists for a selected day, the system clearly communicates it.
+
+![Client empty slots](Docs/assets/frontend/client-empty-slots.png)
+
+---
+
+### Client Dashboard — Available Time Slots
+
+Clients select a date, load slots from the backend, and request an appointment.
+
+All slots are generated server-side and reflect real availability.
+
+![Client slots](Docs/assets/frontend/client-slots.png)
+
+---
+
+### Provider Dashboard — Availability Management
+
+The provider defines **weekly availability blocks**.
+Saving sends a full bulk payload to the backend.
+
+![Provider availability](Docs/assets/frontend/provider-availability.png)
+
+---
+
+### Provider Dashboard — Appointment Management
+
+Providers review appointments, filter by status/date, and confirm or cancel requests.
+
+All decisions are enforced server-side.
+
+![Provider appointments](Docs/assets/frontend/provider-appointments.png)
+
+---
+
+#### Prerequisites
+
+- Node.js 18+ or Bun
+- Backend API running on `http://127.0.0.1:8000`
+
+#### 1. Environment Configuration
+
+Navigate to the frontend directory and create a `.env.local` file:
+
+```env
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
+```
+
+#### 2. Install Dependencies
+
+```bash
+cd frontend
+npm install
+# or
+bun install
+```
+
+#### 3. Start Development Server
+
+```bash
+npm run dev
+# or
+bun dev
+```
+
+**Access the application:**
+- Frontend: http://localhost:3000
+
+#### 4. Default Credentials
+
+**Provider Account:**
+- Email: `barber@mail.com`
+- Password: `ProviderPass123!`
+
+**Client Account:**
+- Register a new account at `/register`
+
+---
+
+### Frontend Design Principles
+
+The frontend is intentionally simple and follows these rules:
+
+1. **No business logic duplication** — All validation happens in the backend
+2. **Explicit API consumption** — Every action is a direct API call
+3. **Role-based navigation** — User role determines available routes
+4. **State visualization only** — Frontend displays state, doesn't enforce it
+5. **JWT token storage** — Tokens stored in `localStorage` (MVP approach)
+
+For detailed frontend architecture decisions, see [`docs/frontend-design.md`](./docs/frontend-design.md)
 
 ---
 
@@ -420,4 +616,4 @@ Contributions are welcome! Please open an issue or submit a pull request.
 
 ---
 
-**Built with using FastAPI & PostgreSQL By Ticonsky <3**
+**Built with ❤️ using FastAPI & PostgreSQL**
