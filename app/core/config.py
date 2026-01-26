@@ -40,5 +40,8 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+# Provider seed (MVP)
+    provider_email: str | None = None
+    provider_password: str | None = None
 
 settings = Settings()
